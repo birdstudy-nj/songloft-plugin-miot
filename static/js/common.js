@@ -9,7 +9,7 @@ const API_BASE = '.';
  */
 function getAuthToken() {
     try {
-        const authData = localStorage.getItem('mimusic-auth');
+        const authData = localStorage.getItem('songloft-auth');
         if (authData) {
             const auth = JSON.parse(authData);
             return auth.accessToken || '';
