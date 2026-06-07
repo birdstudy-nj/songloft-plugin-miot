@@ -58,11 +58,11 @@ async function onInit(): Promise<void> {
     songloft.log.info('宿主 API 基础 URL 已设置: ' + pluginConfig.server_host);
   }
 
-  const executor = new TaskExecutor(configManager, accountManager, minaService, playlistManagerMap, indexingManager);
-  scheduler = new Scheduler(configManager, executor);
-
-  voiceEngine = new VoiceEngine(configManager, accountManager, minaService, playlistManagerMap, indexingManager, new AIAnalyzer());
   conversationMonitor = new ConversationMonitor(accountManager, configManager);
+  voiceEngine = new VoiceEngine(configManager, accountManager, minaService, playlistManagerMap, indexingManager, new AIAnalyzer());
+
+  const executor = new TaskExecutor(configManager, accountManager, minaService, playlistManagerMap, indexingManager, conversationMonitor);
+  scheduler = new Scheduler(configManager, executor);
 
   // 如果配置中没有语音口令配置，写入默认配置
   const existingCommands = await configManager.getVoiceCommands();

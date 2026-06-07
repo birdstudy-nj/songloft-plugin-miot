@@ -718,6 +718,8 @@
                         <option value="stop">停止播放</option>
                         <option value="set_play_mode">设置播放模式</option>
                         <option value="set_volume">设置音量</option>
+                        <option value="enable_monitor">开启对话监听</option>
+                        <option value="disable_monitor">关闭对话监听</option>
                     </select>
                 </div>
 
@@ -833,7 +835,7 @@
                 </div>
 
                 <!-- 目标设备 -->
-                <div class="form-group" style="margin-top:16px">
+                <div class="form-group" id="scheduleTargetGroup" style="margin-top:16px">
                     <label class="form-label">目标设备</label>
                     <label class="schedule-target-option">
                         <input type="checkbox" id="scheduleTargetAll">

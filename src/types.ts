@@ -112,7 +112,7 @@ export interface ScheduledTask {
 }
 
 /** 任务动作类型 */
-export type TaskAction = 'play_playlist' | 'play_playlist_from' | 'stop' | 'set_volume' | 'set_play_mode';
+export type TaskAction = 'play_playlist' | 'play_playlist_from' | 'stop' | 'set_volume' | 'set_play_mode' | 'enable_monitor' | 'disable_monitor';
 
 /** 节假日感知模式(仅对 weekly 调度生效) */
 export type HolidayMode =

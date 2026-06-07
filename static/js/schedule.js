@@ -14,6 +14,8 @@ const actionLabels = {
     'stop': '停止播放',
     'set_play_mode': '设置播放模式',
     'set_volume': '设置音量',
+    'enable_monitor': '开启对话监听',
+    'disable_monitor': '关闭对话监听',
 };
 
 const actionIcons = {
@@ -22,6 +24,8 @@ const actionIcons = {
     'stop': 'stop',
     'set_play_mode': 'repeat',
     'set_volume': 'volume_up',
+    'enable_monitor': 'hearing',
+    'disable_monitor': 'hearing_disabled',
 };
 
 /** 播放模式映射 */
@@ -198,7 +202,7 @@ function renderScheduleList(tasks) {
             `<div class="schedule-task-info">` +
             `<div class="schedule-task-name">${escapeHtml(task.name)}</div>` +
             `<div class="schedule-task-desc">${scheduleDesc} &middot; ${actionLabel}</div>` +
-            (paramDesc ? `<div class="schedule-task-desc">${paramDesc} &middot; ${targetDesc}</div>` : `<div class="schedule-task-desc">${targetDesc}</div>`) +
+            (isGlobalAction(task.action) ? '' : (paramDesc ? `<div class="schedule-task-desc">${paramDesc} &middot; ${targetDesc}</div>` : `<div class="schedule-task-desc">${targetDesc}</div>`)) +
             `</div>` +
             `</div>` +
             `<div class="schedule-task-actions">` +
@@ -470,10 +474,23 @@ function loadSongOptions(playlistId) {
     }).catch(err => console.error('加载歌曲列表失败:', err));
 }
 
+/** 全局动作（不绑定设备） */
+const globalActions = ['enable_monitor', 'disable_monitor'];
+
+function isGlobalAction(action) {
+    return globalActions.includes(action);
+}
+
 function updateActionParams() {
     const action = document.getElementById('scheduleAction').value;
     // 隐藏所有参数区域
     document.querySelectorAll('.schedule-param-group').forEach(el => el.style.display = 'none');
+
+    // 全局动作隐藏目标设备区域
+    const targetGroup = document.getElementById('scheduleTargetGroup');
+    if (targetGroup) {
+        targetGroup.style.display = isGlobalAction(action) ? 'none' : '';
+    }
 
     // 显示对应参数
     switch (action) {
@@ -625,36 +642,38 @@ function saveScheduleTask() {
 
     // 构建参数
     const params = {};
-    if (action === 'play_playlist' || action === 'play_playlist_from') {
-        const playlistSelect = document.getElementById('schedulePlaylistSelect');
-        const pid = playlistSelect ? playlistSelect.value : '';
-        if (!pid) {
-            showSnackbar('请选择歌单', 'error');
-            return;
+    if (!isGlobalAction(action)) {
+        if (action === 'play_playlist' || action === 'play_playlist_from') {
+            const playlistSelect = document.getElementById('schedulePlaylistSelect');
+            const pid = playlistSelect ? playlistSelect.value : '';
+            if (!pid) {
+                showSnackbar('请选择歌单', 'error');
+                return;
+            }
+            // 只保存歌单名称，执行时通过名称查找
+            const pl = cachedPlaylists.find(p => String(p.id) === pid);
+            params.playlist_name = pl ? pl.name : (playlistSelect.options[playlistSelect.selectedIndex]?.textContent || '');
         }
-        // 只保存歌单名称，执行时通过名称查找
-        const pl = cachedPlaylists.find(p => String(p.id) === pid);
-        params.playlist_name = pl ? pl.name : (playlistSelect.options[playlistSelect.selectedIndex]?.textContent || '');
-    }
-    if (action === 'play_playlist_from') {
-        const songSelect = document.getElementById('scheduleSongSelect');
-        // 只保存歌曲名称，执行时通过名称查找
-        if (songSelect && songSelect.selectedIndex > 0) {
-            const songText = songSelect.options[songSelect.selectedIndex].textContent;
-            // 去掉序号前缀 "1. " 只保留歌曲标题
-            params.song_name = songText.replace(/^\d+\.\s*/, '');
+        if (action === 'play_playlist_from') {
+            const songSelect = document.getElementById('scheduleSongSelect');
+            // 只保存歌曲名称，执行时通过名称查找
+            if (songSelect && songSelect.selectedIndex > 0) {
+                const songText = songSelect.options[songSelect.selectedIndex].textContent;
+                // 去掉序号前缀 "1. " 只保留歌曲标题
+                params.song_name = songText.replace(/^\d+\.\s*/, '');
+            }
         }
-    }
-    if (action === 'set_play_mode') {
-        params.play_mode = document.getElementById('schedulePlayMode').value;
-    }
-    if (action === 'set_volume') {
-        params.volume = parseInt(document.getElementById('scheduleVolume').value) || 50;
+        if (action === 'set_play_mode') {
+            params.play_mode = document.getElementById('schedulePlayMode').value;
+        }
+        if (action === 'set_volume') {
+            params.volume = parseInt(document.getElementById('scheduleVolume').value) || 50;
+        }
     }
 
-    // 构建目标
-    const target = { all_managed: targetAll };
-    if (!targetAll) {
+    // 构建目标（全局动作自动设为全选，executor 会忽略）
+    const target = isGlobalAction(action) ? { all_managed: true } : { all_managed: targetAll };
+    if (!isGlobalAction(action) && !targetAll) {
         const devices = [];
         document.querySelectorAll('.schedule-device-checkbox:checked').forEach(cb => {
             devices.push({

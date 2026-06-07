@@ -9,6 +9,7 @@ import { AccountManager } from '../account/manager';
 import { MinaService } from '../service/service';
 import { PlaylistManagerMap } from '../player/manager';
 import { IndexingManager } from '../indexing/manager';
+import { ConversationMonitor } from '../conversation/monitor';
 import type { ScheduledTask, TaskLog, TaskTarget, TaskParams, PlayMode } from '../types';
 
 /** 解析后的单个目标设备 */
@@ -28,6 +29,7 @@ export class TaskExecutor {
   private minaService: MinaService;
   private playlistManagerMap: PlaylistManagerMap;
   private indexingManager: IndexingManager;
+  private conversationMonitor: ConversationMonitor;
 
   constructor(
     configManager: ConfigManager,
@@ -35,18 +37,24 @@ export class TaskExecutor {
     minaService: MinaService,
     playlistManagerMap: PlaylistManagerMap,
     indexingManager: IndexingManager,
+    conversationMonitor: ConversationMonitor,
   ) {
     this.configManager = configManager;
     this.accountManager = accountManager;
     this.minaService = minaService;
     this.playlistManagerMap = playlistManagerMap;
     this.indexingManager = indexingManager;
+    this.conversationMonitor = conversationMonitor;
   }
 
   /**
    * 执行定时任务，返回每个设备的执行日志
    */
   async execute(task: ScheduledTask): Promise<TaskLog[]> {
+    if (task.action === 'enable_monitor' || task.action === 'disable_monitor') {
+      return [await this.executeGlobalAction(task)];
+    }
+
     const targets = await this.resolveTargetDevices(task.target);
     if (targets.length === 0) {
       songloft.log.warn(`[TaskExecutor] 定时任务无目标设备 task_id=${task.id} name=${task.name}`);
@@ -153,6 +161,44 @@ export class TaskExecutor {
       }
     }
     return results;
+  }
+
+  /**
+   * 执行全局动作（不绑定设备）
+   */
+  private async executeGlobalAction(task: ScheduledTask): Promise<TaskLog> {
+    const log: TaskLog = {
+      task_id: task.id,
+      task_name: task.name,
+      action: task.action,
+      success: false,
+      message: '',
+      executed_at: new Date().toISOString(),
+    };
+
+    try {
+      const config = await this.configManager.getConfig();
+      const enable = task.action === 'enable_monitor';
+
+      config.conversation_monitor_enabled = enable;
+      await this.configManager.saveConfig(config);
+
+      if (enable) {
+        this.conversationMonitor.stop();
+        this.conversationMonitor.start();
+      } else {
+        this.conversationMonitor.stop();
+      }
+
+      log.success = true;
+      log.message = enable ? '对话监听已开启' : '对话监听已关闭';
+      songloft.log.info(`[TaskExecutor] ${log.message} task_id=${task.id}`);
+    } catch (e) {
+      log.message = e instanceof Error ? e.message : String(e);
+      songloft.log.error(`[TaskExecutor] 全局动作执行失败 task_id=${task.id} error=${log.message}`);
+    }
+
+    return log;
   }
 
   /**
