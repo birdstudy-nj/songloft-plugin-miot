@@ -67,6 +67,13 @@ export function loadConfig() {
                 forceMp3Switch.checked = forceMp3;
             }
 
+            // 自定义 Music API 型号
+            const extraModelsInput = document.getElementById('extraMusicApiModelsInput');
+            if (extraModelsInput) {
+                const models = data.data.extra_music_api_models || [];
+                extraModelsInput.value = models.join(', ');
+            }
+
             // 外部搜索开关及配置
             const externalSearchEnabled = !!data.data.external_search_enabled;
             const externalSearchSwitch = document.getElementById('externalSearchSwitch');
@@ -182,6 +189,41 @@ export function initForceMp3UI() {
             toggleForceMp3(this.checked);
         });
     }
+}
+
+// ========== 自定义 Music API 型号 ==========
+
+/**
+ * 初始化自定义 Music API 型号 UI 事件
+ */
+export function initExtraMusicApiModelsUI() {
+    const saveBtn = document.getElementById('saveExtraMusicApiModelsBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveExtraMusicApiModels);
+    }
+}
+
+function saveExtraMusicApiModels() {
+    const input = document.getElementById('extraMusicApiModelsInput');
+    if (!input) return;
+
+    const raw = input.value.trim();
+    const models = raw
+        ? raw.split(/[,，\s]+/).map(s => s.trim().toUpperCase()).filter(Boolean)
+        : [];
+
+    apiPost('/config', { extra_music_api_models: models })
+        .then(data => {
+            if (data.success) {
+                input.value = models.join(', ');
+                showSnackbar('自定义型号已保存', 'success');
+            } else {
+                showSnackbar('保存失败：' + (data.error || '未知错误'), 'error');
+            }
+        })
+        .catch(error => {
+            showSnackbar('保存失败：' + error.message, 'error');
+        });
 }
 
 // ========== 外部搜索配置 ==========

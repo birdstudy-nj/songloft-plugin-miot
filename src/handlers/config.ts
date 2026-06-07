@@ -74,6 +74,7 @@ export function registerConfigHandlers(
           external_search_enabled: !!config.external_search_enabled,
           external_search_url: config.external_search_url || '',
           external_search_token: config.external_search_token || '',
+          extra_music_api_models: config.extra_music_api_models || [],
           server_host_status: getServerHostStatus(config.server_host),
           ai_config: aiConfig,
         },
@@ -141,6 +142,15 @@ export function registerConfigHandlers(
       // 更新 external_search_enabled
       if (body.external_search_enabled !== undefined) {
         config.external_search_enabled = !!body.external_search_enabled;
+      }
+
+      // 更新 extra_music_api_models
+      if (body.extra_music_api_models !== undefined) {
+        config.extra_music_api_models = Array.isArray(body.extra_music_api_models)
+          ? body.extra_music_api_models
+              .filter((m: any) => typeof m === 'string' && m.trim())
+              .map((m: string) => m.trim().toUpperCase())
+          : [];
       }
 
       // 更新 ai_config

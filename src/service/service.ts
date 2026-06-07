@@ -115,7 +115,9 @@ export class MinaService {
     try {
       // 获取设备硬件型号用于选择播放接口
       const hardware = await this.getDeviceHardware(client, deviceId);
-      return await client.playByUrl(deviceId, url, hardware);
+      const config = await this.configManager.getConfig();
+      const extraModels = config.extra_music_api_models || [];
+      return await client.playByUrl(deviceId, url, hardware, extraModels);
     } catch (e) {
       songloft.log.error('[MinaService] playURL failed: ' + String(e));
       return false;

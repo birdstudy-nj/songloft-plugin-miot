@@ -70,6 +70,9 @@ export const NEED_USE_PLAY_MUSIC_API: Record<string, boolean> = {
   'L06A': true,
   'X08A': true,
   'X10A': true,
+  'L15A': true,
+  'L16A': true,
+  'L17A': true,
 };
 
 /**
@@ -81,9 +84,12 @@ export function shouldUseMinaForAsk(hardware: string): boolean {
 
 /**
  * 判断指定硬件型号是否需要使用 player_play_music API
+ * @param extraModels - 用户自定义的额外型号列表（补充内置白名单）
  */
-export function needUsePlayMusicAPI(hardware: string): boolean {
-  return NEED_USE_PLAY_MUSIC_API[hardware] === true;
+export function needUsePlayMusicAPI(hardware: string, extraModels?: string[]): boolean {
+  if (NEED_USE_PLAY_MUSIC_API[hardware] === true) return true;
+  if (extraModels && extraModels.includes(hardware)) return true;
+  return false;
 }
 
 /**

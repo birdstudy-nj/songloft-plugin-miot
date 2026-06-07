@@ -113,9 +113,10 @@ export class MinaHTTPClient {
    * @param deviceId - 设备 ID
    * @param url - 音频 URL
    * @param hardware - 设备硬件型号（用于选择播放方法）
+   * @param extraModels - 用户自定义的额外 Music API 型号列表
    */
-  async playByUrl(deviceId: string, url: string, hardware = ''): Promise<boolean> {
-    if (hardware && needUsePlayMusicAPI(hardware)) {
+  async playByUrl(deviceId: string, url: string, hardware = '', extraModels?: string[]): Promise<boolean> {
+    if (hardware && needUsePlayMusicAPI(hardware, extraModels)) {
       return this.playByMusicURL(deviceId, url);
     }
     return this.playURL(deviceId, url);
