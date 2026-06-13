@@ -7,7 +7,7 @@
 import { ConfigManager } from '../config/manager';
 import { MinaService } from '../service/service';
 import { URLBuilder } from './url_builder';
-import { getHostBaseUrl } from '../utils/http';
+import { getHostBaseUrl, callHostAPI } from '../utils/http';
 import type { PlayState, PlayMode, PlayerStatus } from '../types';
 
 // ===== 歌曲类型 =====
@@ -552,6 +552,14 @@ export class PlaylistManager {
     if (this.state !== 'playing') {
       songloft.log.info('[PlaylistManager] Not playing, skip auto-next');
       return;
+    }
+
+    // 通知后端当前歌曲播放完成（触发 JS 插件播放事件广播）
+    const finishedSong = this.songs[this.currentIndex];
+    if (finishedSong && finishedSong.id > 0) {
+      callHostAPI('POST', `/api/v1/songs/${finishedSong.id}/played?source=miot`).catch(e => {
+        songloft.log.warn('[PlaylistManager] songPlayed notify failed: ' + String(e));
+      });
     }
 
     const nextIdx = this.getNextIndex();
