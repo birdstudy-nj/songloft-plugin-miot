@@ -690,6 +690,7 @@ export class VoiceEngine {
     const maxWaitMs = 30000;
     const pollInterval = 2000;
     const startTime = Date.now();
+    let deviceBecameIdle = false;
 
     while (Date.now() - startTime < maxWaitMs) {
       if (!pm.isPlaying() || this.resumeCancelled) return;
@@ -697,6 +698,7 @@ export class VoiceEngine {
       const status = await this.minaService.getPlayerStatus(accountId, deviceId);
       const playerStatus = (status?.data as any)?.status;
       if (playerStatus !== 1) {
+        deviceBecameIdle = true;
         break;
       }
 
@@ -704,6 +706,13 @@ export class VoiceEngine {
     }
 
     if (!pm.isPlaying() || this.resumeCancelled) return;
+
+    if (!deviceBecameIdle) {
+      // 超时退出：设备一直在播放，说明已自动恢复，仅重置切歌定时器
+      songloft.log.info('[VoiceEngine] Device auto-resumed, resetting timer only');
+      await pm.resumePlayback();
+      return;
+    }
 
     const ok = await pm.replayCurrent();
     if (ok) {
