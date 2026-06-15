@@ -204,6 +204,9 @@ function fuzzySearchList<T>(
 /** 搜索结果最大返回数 */
 const MAX_SEARCH_RESULTS = 10;
 
+/** 最低匹配分数阈值 — 低于此分数的模糊匹配视为无效（编辑距离噪声最高约 30，子串匹配 40+） */
+const MIN_MATCH_SCORE = 40;
+
 /**
  * 索引管理器
  * 从 Songloft 宿主API获取歌曲/歌单数据，建立内存索引，提供模糊搜索
@@ -449,7 +452,7 @@ export class IndexingManager {
         const titleScore = fuzzyScore(songName, s.title);
         const artistScore = fuzzyScore(songName, s.artist);
         const score = Math.max(titleScore, artistScore);
-        if (score > bestDirectScore) {
+        if (score >= MIN_MATCH_SCORE && score > bestDirectScore) {
           bestDirectScore = score;
           bestDirectLoc = {
             playlistId: pl.id,
@@ -465,19 +468,34 @@ export class IndexingManager {
     const elapsedMs = Date.now() - startMs;
 
     // 3. 优先返回全局索引命中（保持 searchSong 的评分排序）
-    for (const song of matchedSongs) {
-      const loc = songLocationMap.get(song.id);
+    for (let i = 0; i < matchedSongs.length; i++) {
+      const loc = songLocationMap.get(matchedSongs[i].id);
       if (loc) {
-        songloft.log.info(`[IndexingManager] findSongByName done (${elapsedMs}ms) → "${loc.songTitle}" in playlist="${loc.playlistName}"`);
+        songloft.log.info(`[IndexingManager] findSongByName done (${elapsedMs}ms) → "${loc.songTitle}" by "${loc.artist}" in playlist="${loc.playlistName}" (globalRank=#${i + 1})`);
         return loc;
       }
     }
 
-    // 4. 兜底：全局索引命中歌曲均不在歌单中，使用歌单内直接模糊匹配的最佳结果
+    // 4a. 全局索引有高质量命中但不在任何歌单中 → 返回 null 让调用方走独立歌曲路径
+    if (matchedSongs.length > 0) {
+      const bestGlobal = matchedSongs[0];
+      const bestGlobalScore = Math.max(
+        fuzzyScore(songName, bestGlobal.title),
+        fuzzyScore(songName, bestGlobal.artist),
+      );
+      if (bestGlobalScore >= MIN_MATCH_SCORE) {
+        songloft.log.info(
+          `[IndexingManager] findSongByName done (${elapsedMs}ms) → global match "${bestGlobal.title}" by "${bestGlobal.artist}" (score=${bestGlobalScore.toFixed(1)}) not in any playlist, deferring to standalone`
+        );
+        return null;
+      }
+    }
+
+    // 4b. 无高质量全局匹配，使用歌单内直接模糊匹配的最佳结果（已有 MIN_MATCH_SCORE 阈值保护）
     if (bestDirectLoc) {
-      songloft.log.info(`[IndexingManager] findSongByName done (${elapsedMs}ms) → fallback "${bestDirectLoc.songTitle}" in playlist="${bestDirectLoc.playlistName}"`);
+      songloft.log.info(`[IndexingManager] findSongByName done (${elapsedMs}ms) → fallback "${bestDirectLoc.songTitle}" in playlist="${bestDirectLoc.playlistName}" (score=${bestDirectScore.toFixed(1)})`);
     } else {
-      songloft.log.info(`[IndexingManager] findSongByName done (${elapsedMs}ms) → no match`);
+      songloft.log.info(`[IndexingManager] findSongByName done (${elapsedMs}ms) → no match (bestDirectScore=${bestDirectScore.toFixed(1)})`);
     }
     return bestDirectLoc;
   }
@@ -498,6 +516,15 @@ export class IndexingManager {
     // 在刷新后的索引中按 title 模糊匹配
     const matched = this.searchSong(songName);
     if (matched.length === 0) return null;
+
+    const bestScore = Math.max(
+      fuzzyScore(songName, matched[0].title),
+      fuzzyScore(songName, matched[0].artist),
+    );
+    if (bestScore < MIN_MATCH_SCORE) {
+      songloft.log.info(`[IndexingManager] findStandaloneSongByName: best match "${matched[0].title}" by "${matched[0].artist}" score=${bestScore.toFixed(1)} below threshold, skipping`);
+      return null;
+    }
 
     // 通过 ID 获取完整歌曲信息（含 url）
     try {
