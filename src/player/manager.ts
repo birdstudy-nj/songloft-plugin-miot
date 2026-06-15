@@ -336,6 +336,23 @@ export class PlaylistManager {
   }
 
   /**
+   * 仅重置切歌定时器（不发送任何设备命令）
+   * 用于设备已自动恢复播放的场景，避免多余的 play 命令导致歌曲从头播放
+   */
+  resetAutoNextTimer(): void {
+    this.stopCheckTimer();
+    const song = this.getCurrentSong();
+    if (song && song.duration > 0 && this.playStartTimeMs > 0) {
+      const elapsedSec = (Date.now() - this.playStartTimeMs) / 1000;
+      const remaining = song.duration - elapsedSec;
+      if (remaining > 0) {
+        this.startCheckTimer(remaining);
+        songloft.log.info(`[PlaylistManager] Timer reset for auto-resume: remaining=${remaining.toFixed(1)}s`);
+      }
+    }
+  }
+
+  /**
    * 重新推送当前歌曲 URL 到设备（用于语音打断后恢复）
    * 与 resumePlayback() 不同，这里重新发送 URL 而非简单 resume，
    * 因为被语音唤醒打断后设备的 URL 播放状态已被清除。

@@ -709,8 +709,9 @@ export class VoiceEngine {
 
     if (!deviceBecameIdle) {
       // 超时退出：设备一直在播放，说明已自动恢复，仅重置切歌定时器
+      // 不发送 play 命令，避免部分设备（如 L15A）收到多余指令后从头播放
       songloft.log.info('[VoiceEngine] Device auto-resumed, resetting timer only');
-      await pm.resumePlayback();
+      pm.resetAutoNextTimer();
       return;
     }
 
