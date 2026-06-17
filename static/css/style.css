@@ -3385,24 +3385,6 @@ html.embed .player-bar-cover {
     }
 }
 
-/* Desktop nav rail offset */
-@media (min-width: 1024px) {
-    .fullscreen-player {
-        left: 80px;
-    }
-}
-
-@media (min-width: 1440px) {
-    .fullscreen-player {
-        left: 100px;
-    }
-}
-
-/* Embed mode — no nav rail offset */
-html.embed .fullscreen-player {
-    left: 0 !important;
-}
-
 /* Hide player-bar and tab-bar when fullscreen player is open */
 .player-bar.fp-hidden,
 .tab-bar.fp-hidden {
