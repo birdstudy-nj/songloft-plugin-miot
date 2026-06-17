@@ -59,6 +59,7 @@ export function openFullscreenPlayer() {
 
     isOpen = true;
     el.classList.add('open');
+    document.body.style.overflow = 'hidden';
 
     document.querySelector('.player-bar')?.classList.add('fp-hidden');
     document.querySelector('.tab-bar')?.classList.add('fp-hidden');
@@ -73,6 +74,7 @@ export function closeFullscreenPlayer() {
 
     isOpen = false;
     el.classList.remove('open');
+    document.body.style.overflow = '';
 
     stopProgressAnimation();
 

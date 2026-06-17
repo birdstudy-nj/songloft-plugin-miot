@@ -1632,13 +1632,13 @@
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 150;
+    z-index: 350;
 }
 
 /* Popup Panel - 通用弹出面板 */
 .popup-panel {
     position: fixed;
-    z-index: 151;
+    z-index: 351;
     background: var(--md-surface);
     border-radius: 12px;
     box-shadow: 0 6px 16px rgba(0,0,0,.18), 0 2px 8px rgba(0,0,0,.12);

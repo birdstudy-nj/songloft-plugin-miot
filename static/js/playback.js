@@ -677,10 +677,10 @@ export function closeAllPopups() {
 /**
  * 打开/关闭播放模式面板
  */
-export function togglePlayModePanel() {
+export function togglePlayModePanel(e) {
     const panel = document.getElementById('playModePanel');
     const backdrop = document.getElementById('playModeBackdrop');
-    const btn = document.getElementById('playModeBtn');
+    const btn = e?.currentTarget || document.getElementById('playModeBtn');
 
     if (!panel || !backdrop || !btn) return;
 
@@ -785,10 +785,10 @@ function updatePlayModeHighlight() {
 /**
  * 打开/关闭音量面板
  */
-export function toggleVolumePanel() {
+export function toggleVolumePanel(e) {
     const panel = document.getElementById('volumePanel');
     const backdrop = document.getElementById('volumeBackdrop');
-    const btn = document.getElementById('volumePopupBtn');
+    const btn = e?.currentTarget || document.getElementById('volumePopupBtn');
 
     if (!panel || !backdrop || !btn) return;
 
