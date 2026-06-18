@@ -140,6 +140,15 @@ export function loadPlaylists() {
             return;
         }
 
+        // 歌单为空且有提示消息时，显示 snackbar
+        if (data.data.length === 0 && data.message) {
+            if (isServerHostError(data.message)) {
+                showSnackbar(data.message + ' 请切换到「设置」页面配置服务器地址。', 'warning');
+            } else {
+                showSnackbar(data.message, 'warning');
+            }
+        }
+
         const select = document.getElementById('playlistSelect');
         if (!select) return;
 

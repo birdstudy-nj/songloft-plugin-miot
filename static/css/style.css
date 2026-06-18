@@ -825,7 +825,7 @@
 /* Player Bar - 固定底部播放控制栏 */
 .player-bar {
     position: fixed;
-    bottom: calc(64px + env(safe-area-inset-bottom));
+    bottom: env(safe-area-inset-bottom, 0px);
     left: 0;
     right: 0;
     background: var(--md-surface);
@@ -2691,6 +2691,7 @@ html.embed .player-bar {
 }
 html.embed #tab-player {
     padding-top: 100px !important;
+    padding-bottom: 160px !important;
 }
 
 /* ============================================ */
