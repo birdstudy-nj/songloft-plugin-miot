@@ -43,7 +43,7 @@ const COMMAND_PRIORITY: Record<string, number> = {
  */
 export function getDefaultVoiceCommands(): VoiceCommand[] {
   return [
-    { type: 'play_playlist', keywords: ['播放歌单', '放歌单'], enabled: true },
+    { type: 'play_playlist', keywords: ['播放歌单', '放歌单', '播放列表'], enabled: true },
     { type: 'play_song', keywords: ['播放歌曲', '放歌曲', '我想听'], enabled: true },
     { type: 'set_play_mode', keywords: ['随机播放', '随机模式'], param: 'random', enabled: true },
     { type: 'set_play_mode', keywords: ['单曲循环', '循环播放这首'], param: 'single', enabled: true },
@@ -401,6 +401,7 @@ export class VoiceEngine {
     const matchedPlaylist = this.indexingManager.findPlaylistByName(playlistName);
     if (!matchedPlaylist) {
       songloft.log.warn(`[VoiceEngine] Playlist not found: ${playlistName}`);
+      await this.minaService.textToSpeech(accountId, deviceId, `未找到歌单：${playlistName}`);
       return;
     }
 
@@ -482,6 +483,7 @@ export class VoiceEngine {
       // 本地缓存歌曲未击中，尝试在线搜索（需配置了外部搜索 API）
       if (!(await this.onlineSearcher.isExternalSearchConfigured())) {
         songloft.log.warn('[VoiceEngine] External search not configured, skip online search');
+        await this.minaService.textToSpeech(accountId, deviceId, `未找到歌曲：${songName}`);
         return;
       }
       const hint = songName.trim() ? { title: songName.trim() } : null;
@@ -490,6 +492,7 @@ export class VoiceEngine {
       );
       if (!played) {
         songloft.log.warn(`[VoiceEngine] Online search failed for: ${songName}`);
+        await this.minaService.textToSpeech(accountId, deviceId, `未找到歌曲：${songName}`);
         return;
       }
       // 外部搜索播放成功后刷新索引，后续可直接本地命中
